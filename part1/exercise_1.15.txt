@@ -1,0 +1,5 @@
+https://hub.docker.com/repository/docker/ismomehdi/portfolio
+
+- React-based portfolio app.
+- Enter docker build . -t ismomehdi/portfolio && docker run -p 5173:5173 ismomehdi/portfolio to run it.
+- The app is then available in http://localhost:5173/.
