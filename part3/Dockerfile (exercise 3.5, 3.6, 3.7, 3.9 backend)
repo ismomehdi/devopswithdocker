@@ -1,0 +1,17 @@
+FROM golang:1.16 AS build-stage
+
+WORKDIR /usr/src/app
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server
+
+ENV REQUEST_ORIGIN=http://localhost:5000
+
+FROM scratch
+
+WORKDIR /
+
+COPY --from=build-stage ./server ./server
+
+CMD ["./server"]

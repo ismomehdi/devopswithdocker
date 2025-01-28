@@ -1,4 +1,4 @@
-FROM node:16-alpine3.18
+FROM node:16 AS build-stage
 
 WORKDIR /usr/src/app
 
@@ -8,8 +8,16 @@ RUN npm install && \
     npm install -g serve && \
     REACT_APP_BACKEND_URL=http://localhost:80/api && \
     npm run build && \
-    adduser -S appuser && \
     rm -rf node_modules
+
+FROM node:16-slim
+
+WORKDIR /usr/src/app
+
+RUN npm install -g serve && \
+    adduser appuser
+
+COPY --from=build-stage /usr/src/app/build ./build
 
 USER appuser
 

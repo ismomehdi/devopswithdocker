@@ -1,0 +1,74 @@
+# OLD DOCKERFILE (1.15GB):
+
+ARG VERSION_NODE=14.15.4
+FROM node:${VERSION_NODE}-alpine3.12
+
+ARG ENVIRONMENT=production
+ENV NODE_ENV ${ENVIRONMENT}
+
+# Create a directory where our app will be placed
+RUN mkdir -p /usr/src/app
+
+# Change directory so that our commands run inside this new directory
+WORKDIR /usr/src/app
+
+# Copy package.json inside container
+COPY frontend/package*.json /usr/src/app/
+
+# Run npm install
+RUN --mount=type=cache,target=/usr/src/.npm \
+    npm set cache /usr/src/.npm && \
+    npm config set registry https://registry.npmjs.org/ && \
+    NODE_ENV=development npm install
+
+# Copy the rest of the application
+COPY frontend/ /usr/src/app/
+
+RUN npm run build
+
+# Set runtime user
+#USER node
+
+RUN npm prune --production && npm cache clean --force
+
+# Start server
+CMD npm run start
+
+# Expose the port the app runs in
+EXPOSE 3006
+
+
+--------------
+
+
+# NEW DOCKERFILE (883MB)
+
+FROM node:14.15.4-alpine3.12 AS build-stage
+WORKDIR /usr/src/app
+
+COPY ./package*.json /usr/src/app/
+
+RUN --mount=type=cache,target=/usr/src/.npm \
+    npm set cache /usr/src/.npm && \
+    npm config set registry https://registry.npmjs.org/ && \
+    NODE_ENV=development npm install
+
+COPY ./ /usr/src/app/
+
+RUN npm run build
+
+FROM node:14.15.4-slim
+WORKDIR /usr/src/app
+
+RUN adduser appuser
+
+COPY --from=build-stage /usr/src/app/.next ./.next
+COPY --from=build-stage /usr/src/app/public ./public
+COPY --from=build-stage /usr/src/app/node_modules ./node_modules
+COPY --from=build-stage /usr/src/app/package.json ./
+
+USER appuser
+
+CMD npm start
+
+EXPOSE 3006
